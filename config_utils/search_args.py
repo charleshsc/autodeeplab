@@ -92,12 +92,13 @@ def obtain_search_args():
                         help='finetuning on a different dataset')
     # evaluation option
     parser.add_argument('--eval-interval', type=int, default=1,
-                        help='evaluuation interval (default: 1)')
-    parser.add_argument('--no-val', action='store_true', default=False,
+                        help='evaluation interval (default: 1)')
+    parser.add_argument('--no_val', action='store_true', default=False,
                         help='skip validation during training')
     parser.add_argument('--affine', default=False,
                         type=bool, help='whether use affine in BN')
     parser.add_argument('--multi_scale', default=(0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0),
                         type=bool, help='whether use multi_scale in train')
+    parser.add_argument('--dist', type=bool, default=False, help='whether to use Distribued Sampler (default: False)')
     args = parser.parse_args()
     return args

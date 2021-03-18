@@ -18,8 +18,8 @@ class AutoDeeplab(nn.Module):
         self._filter_multiplier = filter_multiplier
         self._criterion = criterion
         self._initialize_alphas_betas()
-        f_initial = int(self._filter_multiplier)
-        half_f_initial = int(f_initial / 2)
+        f_initial = int(self._filter_multiplier) # 8
+        half_f_initial = int(f_initial / 2) # 4
 
         self.stem0 = nn.Sequential(
             nn.Conv2d(3, half_f_initial * self._block_multiplier, 3, stride=2, padding=1),

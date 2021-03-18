@@ -21,6 +21,7 @@ class Loader(object):
         self._alphas = checkpoint['state_dict']['alphas']
         self._betas = checkpoint['state_dict']['betas']
 
+        ## 解析器
         self.decoder = Decoder(alphas=self._alphas, betas=self._betas, steps=5)
 
     def retreive_alphas_betas(self):

@@ -62,6 +62,7 @@ class Cell(nn.Module):
             new_states = []
             for j, h in enumerate(states):
                 branch_index = offset + j
+                # cell_arch 元素 第一个元素代表边的编号，第二个代表 边的操作，每个节点只选两条边，因此为 10*2
                 if branch_index in self.cell_arch[:, 0]:
                     if prev_prev_input is None and j == 0:
                         ops_index += 1
@@ -112,12 +113,14 @@ class newModel(nn.Module):
         # C_prev_prev = 64
         filter_param_dict = {0: 1, 1: 2, 2: 4, 3: 8}
         for i in range(self._num_layers):
+            # 找到前面layer 所对应的 cell
             level_option = torch.sum(self.network_arch[i], dim=1)
             prev_level_option = torch.sum(self.network_arch[i - 1], dim=1)
             prev_prev_level_option = torch.sum(self.network_arch[i - 2], dim=1)
             level = torch.argmax(level_option).item()
             prev_level = torch.argmax(prev_level_option).item()
             prev_prev_level = torch.argmax(prev_prev_level_option).item()
+
             if i == 0:
                 downup_sample = - torch.argmax(torch.sum(self.network_arch[0], dim=1))
                 _cell = cell(self._step, self._block_multiplier, ini_initial_fm / args.block_multiplier,
@@ -134,17 +137,15 @@ class newModel(nn.Module):
                                  initial_fm / args.block_multiplier,
                                  self._filter_multiplier * filter_param_dict[prev_level],
                                  self.cell_arch, self.network_arch[i],
-                                 self._filter_multiplier *
-                                 filter_param_dict[level],
+                                 self._filter_multiplier * filter_param_dict[level],
                                  downup_sample, self.args)
                 else:
                     _cell = cell(self._step, self._block_multiplier,
-                                 self._filter_multiplier * filter_param_dict[prev_prev_level],
-                                 self._filter_multiplier *
-                                 filter_param_dict[prev_level],
+                                 self._filter_multiplier * filter_param_dict[prev_prev_level], # 就这一行不一样
+                                 self._filter_multiplier * filter_param_dict[prev_level],
                                  self.cell_arch, self.network_arch[i],
-                                 self._filter_multiplier *
-                                 filter_param_dict[level], downup_sample, self.args)
+                                 self._filter_multiplier *filter_param_dict[level],
+                                 downup_sample, self.args)
 
             self.cells += [_cell]
 

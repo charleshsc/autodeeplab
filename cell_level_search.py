@@ -32,6 +32,9 @@ class Cell(nn.Module):
         self.C_prev_prev = int(prev_prev_fmultiplier * block_multiplier)
         self._prev_fmultiplier_same = prev_fmultiplier_same
 
+        # 注意到 只有prev才会有不同的spatial，prev_prev spatial 是一样的
+
+        #下面步骤是处理不同spatial channel 数目的问题
         if prev_fmultiplier_down is not None:
             self.C_prev_down = int(prev_fmultiplier_down * block_multiplier)
             self.preprocess_down = ReLUConvBN(
@@ -133,8 +136,10 @@ class Cell(nn.Module):
 
                 s = sum(new_states)
                 offset += len(states)
+                # 每一个block的输出为 前面所有block 的 和
                 states.append(s)
 
+            # 一个cell的输出 最后将所有block 进行concat
             concat_feature = torch.cat(states[-self.block_multiplier:], dim=1)
             final_concates.append(concat_feature)
         return final_concates

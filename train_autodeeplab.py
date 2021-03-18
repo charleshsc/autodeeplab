@@ -146,7 +146,7 @@ class Trainer(object):
                 copy_state_dict(self.model.state_dict(), new_state_dict)
 
             else:
-                if torch.cuda.device_count() > 1 or args.load_parallel:
+                if len(self.args.gpu_ids) >1 or args.load_parallel:
                     # self.model.module.load_state_dict(checkpoint['state_dict'])
                     copy_state_dict(self.model.module.state_dict(), checkpoint['state_dict'])
                 else:
@@ -218,7 +218,7 @@ class Trainer(object):
         if self.args.no_val:
             # save checkpoint every epoch
             is_best = False
-            if torch.cuda.device_count() > 1:
+            if len(self.args.gpu_ids) >1:
                 state_dict = self.model.module.state_dict()
             else:
                 state_dict = self.model.state_dict()
@@ -269,7 +269,7 @@ class Trainer(object):
         if new_pred > self.best_pred:
             is_best = True
             self.best_pred = new_pred
-            if torch.cuda.device_count() > 1:
+            if len(self.args.gpu_ids) >1:
                 state_dict = self.model.module.state_dict()
             else:
                 state_dict = self.model.state_dict()
@@ -289,6 +289,9 @@ def main():
         except ValueError:
             raise ValueError('Argument --gpu_ids must be a comma-separated list of integers only')
 
+    torch.cuda.set_device(args.gpu_ids[0])
+    # 目前网络的训练多为多卡训练，大型网络结构以及复杂任务会使得每张卡负责的batch-size小于等于1，若不进行同步BN，moving mean、moving variance参数会产生较大影响，造成BN层失效。
+    # None represents auto
     if args.sync_bn is None:
         if args.cuda and len(args.gpu_ids) > 1:
             args.sync_bn = True

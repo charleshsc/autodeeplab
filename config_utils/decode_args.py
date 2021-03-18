@@ -25,8 +25,8 @@ def obtain_decode_args():
     parser.add_argument('--test-batch-size', type=int, default=None,
                         metavar='N', help='input batch size for \
                                 testing (default: auto)')
-    parser.add_argument('--no-cuda', action='store_true', default=
-                        False, help='disables CUDA training')
+    parser.add_argument('--no-cuda', action='store_true', default= False,
+                        help='disables CUDA training')
     parser.add_argument('--resume', type=str, default=None,
                         help='put the path to resuming file if needed')
 
