@@ -2,6 +2,8 @@ import os
 import pdb
 import warnings
 import numpy as np
+import sys
+import logging
 
 import torch
 import torch.nn as nn
@@ -16,6 +18,12 @@ from utils.step_lr_scheduler import Iter_LR_Scheduler
 from retrain_model.build_autodeeplab import Retrain_Autodeeplab
 from config_utils.re_train_autodeeplab import obtain_retrain_autodeeplab_args
 
+log_format = '%(asctime)s %(message)s'
+logging.basicConfig(stream=sys.stdout, level=logging.INFO,
+    format=log_format, datefmt='%m/%d %I:%M:%S %p')
+fh = logging.FileHandler('log.txt')
+fh.setFormatter(logging.Formatter(log_format))
+logging.getLogger().addHandler(fh)
 
 
 def main():
@@ -23,6 +31,9 @@ def main():
     assert torch.cuda.is_available()
     torch.backends.cudnn.benchmark = True
     args = obtain_retrain_autodeeplab_args()
+    logging.info("args = %s \n",args)
+    torch.cuda.set_device(int(args.gpu))
+
     model_fname = 'data/deeplab_{0}_{1}_v3_{2}_epoch%d.pth'.format(args.backbone, args.dataset, args.exp)
     if args.dataset == 'pascal':
         raise NotImplementedError
@@ -44,7 +55,7 @@ def main():
         args.n_min = int((args.batch_size / len(args.gpu) * args.crop_size[0] * args.crop_size[1]) // 16)
     criterion = build_criterion(args)
 
-    model = nn.DataParallel(model).cuda()
+    #model = nn.DataParallel(model).cuda()
     model.train()
     if args.freeze_bn:
         for m in model.modules():
@@ -52,7 +63,8 @@ def main():
                 m.eval()
                 m.weight.requires_grad = False
                 m.bias.requires_grad = False
-    optimizer = optim.SGD(model.module.parameters(), lr=args.base_lr, momentum=0.9, weight_decay=0.0001)
+    # optimizer = optim.SGD(model.module.parameters(), lr=args.base_lr, momentum=0.9, weight_decay=0.0001)
+    optimizer = optim.SGD(model.parameters(), lr=args.base_lr, momentum=0.9, weight_decay=0.0001)
 
     max_iteration = len(dataset_loader) * args.epochs
     scheduler = Iter_LR_Scheduler(args, max_iteration, len(dataset_loader))
@@ -68,6 +80,9 @@ def main():
             print('=> loaded checkpoint {0} (epoch {1})'.format(args.resume, checkpoint['epoch']))
         else:
             raise ValueError('=> no checkpoint found at {0}'.format(args.resume))
+
+    if torch.cuda.is_available():
+        model = model.cuda()
 
     for epoch in range(start_epoch, args.epochs):
         losses = AverageMeter()
@@ -86,7 +101,7 @@ def main():
             optimizer.step()
             optimizer.zero_grad()
 
-            print('epoch: {0}\t''iter: {1}/{2}\t''lr: {3:.6f}\t''loss: {loss.val:.4f} ({loss.ema:.4f})'.format(
+            logging.info('epoch: {0}\t''iter: {1}/{2}\t''lr: {3:.6f}\t''loss: {loss.val:.4f} ({loss.ema:.4f})'.format(
                 epoch + 1, i + 1, len(dataset_loader), scheduler.get_lr(optimizer), loss=losses))
         if epoch < args.epochs - 50:
             if epoch % 50 == 0:
