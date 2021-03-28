@@ -10,6 +10,7 @@ import torch.nn as nn
 import torch.utils.data
 import torch.backends.cudnn
 import torch.optim as optim
+import glob
 
 import dataloaders
 from utils.utils import AverageMeter
@@ -18,10 +19,21 @@ from utils.step_lr_scheduler import Iter_LR_Scheduler
 from retrain_model.build_autodeeplab import Retrain_Autodeeplab
 from config_utils.re_train_autodeeplab import obtain_retrain_autodeeplab_args
 
+args = obtain_retrain_autodeeplab_args()
+
+if not os.path.exists(args.saver):
+    os.mkdir(args.saver)
+
+runs = sorted(glob.glob(os.path.join(args.saver,'experiment_*')))
+run_id = max([int(x.split('_')[-1]) for x in runs]) + 1 if runs else 0
+args.saver = os.path.join(args.saver,'experiment_{}'.format(str(run_id)))
+if not os.path.exists(args.saver):
+    os.mkdir(args.saver)
+
 log_format = '%(asctime)s %(message)s'
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
     format=log_format, datefmt='%m/%d %I:%M:%S %p')
-fh = logging.FileHandler('log.txt')
+fh = logging.FileHandler(args.saver+'/log.txt')
 fh.setFormatter(logging.Formatter(log_format))
 logging.getLogger().addHandler(fh)
 
@@ -30,11 +42,10 @@ def main():
     warnings.filterwarnings('ignore')
     assert torch.cuda.is_available()
     torch.backends.cudnn.benchmark = True
-    args = obtain_retrain_autodeeplab_args()
     logging.info("args = %s \n",args)
     torch.cuda.set_device(int(args.gpu))
 
-    model_fname = 'data/deeplab_{0}_{1}_v3_{2}_epoch%d.pth'.format(args.backbone, args.dataset, args.exp)
+    model_fname = '{0}/deeplab_{1}_{2}_v3_{3}_epoch%d.pth'.format(args.saver,args.backbone, args.dataset, args.exp)
     if args.dataset == 'pascal':
         raise NotImplementedError
     elif args.dataset == 'cityscapes':
